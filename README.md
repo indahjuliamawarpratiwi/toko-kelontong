@@ -11,12 +11,5 @@ Web untuk membantu pengelolaan stok dan transaksi pada toko kelontong. Sistem me
 7. Riwayat transaksi
 8. Laporan penjualan
 
-# Teknologi yang Digunakan
-- PHP Native
-- MySQL
-- Bootstrap 5
-- HTML, CSS, JavaScript
-- XAMPP (Development Environment)
-
 # Tujuan Proyek
 Proyek ini dibuat untuk membantu digitalisasi pengelolaan toko kelontong sehingga proses pencatatan stok dan transaksi menjadi lebih cepat, akurat, dan terorganisir.
