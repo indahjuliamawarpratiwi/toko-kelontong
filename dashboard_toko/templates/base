@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelontong Modern POS</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="flex h-screen overflow-hidden">
+        <div class="w-64 bg-[#1E3A8A] text-white flex flex-col justify-between hidden md:flex">
+            <div class="p-5">
+                <h1 class="text-2xl font-bold tracking-wider mb-10 text-center">Toko Kelontong</h1>
+                <nav class="space-y-4">
+                    <a href="/" class="block px-4 py-2.5 rounded hover:bg-blue-800 transition">📊 Dashboard</a>
+                    <a href="/barang" class="block px-4 py-2.5 rounded hover:bg-blue-800 transition">📦 Data Barang</a>
+                    <a href="/kasir" class="block px-4 py-2.5 rounded hover:bg-blue-800 transition">🛒 Kasir Penjualan</a>
+                    <a href="/restok" class="block px-4 py-2.5 rounded hover:bg-blue-800 transition">➕ Restok Barang</a>
+                    <a href="/laporan" class="block px-4 py-2.5 rounded hover:bg-blue-800 transition">📈 Laporan Toko</a>
+                </nav>
+            </div>
+            <div class="p-4 border-t border-blue-800 text-xs text-center text-blue-300">
+                Aplikasi Toko v1.0 &copy; 2026
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col overflow-y-auto">
+            <header class="bg-white shadow px-6 py-4 flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-700">Sistem Manajemen Toko</h2>
+                <div class="text-sm text-gray-500">Status: <span class="text-green-500 font-bold">● Online</span></div>
+            </header>
+            
+            <main class="p-6">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+</body>
+</html>

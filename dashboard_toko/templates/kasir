@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-bold mb-4 text-gray-800">Pilih Produk</h3>
+        <input type="text" id="cari-kasir" oninput="cariDiKasir()" placeholder="Ketik nama produk..." class="w-full border p-2 rounded mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto" id="grid-produk">
+            </div>
+    </div>
+    
+    <div class="bg-white p-6 rounded-lg shadow flex flex-col justify-between h-[500px]">
+        <div>
+            <h3 class="text-lg font-bold mb-4 text-gray-800">Keranjang Kasir</h3>
+            <div class="space-y-3 overflow-y-auto max-h-[300px]" id="keranjang-list">
+                </div>
+        </div>
+        <div class="border-t pt-4 mt-4">
+            <div class="flex justify-between text-lg font-bold mb-4 text-gray-800">
+                <span>Total Bayar:</span>
+                <span id="grand-total">Rp 0</span>
+            </div>
+            <button onclick="prosesCheckout()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded shadow">Selesaikan Transaksi</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let listBarangMaster = [];
+    let keranjang = [];
+
+    function loadProdukKasir() {
+        fetch('/api/barang')
+            .then(res => res.json())
+            .then(data => {
+                listBarangMaster = data;
+                renderGrid(data);
+            });
+    }
+
+    function renderGrid(items) {
+        let html = '';
+        items.forEach(b => {
+            html += `<div class="border p-4 rounded-lg flex justify-between items-center bg-gray-50">
+                <div>
+                    <p class="font-bold text-gray-800">${b.nama_barang}</p>
+                    <p class="text-xs text-gray-500">Stok: ${b.stok} | Rp ${b.harga_jual.toLocaleString()}</p>
+                </div>
+                <button onclick="tambahKeKeranjang(${b.id_barang})" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">+</button>
+            </div>`;
+        });
+        document.getElementById('grid-produk').innerHTML = html || '<p class="text-gray-500">Barang tidak ditemukan.</p>';
+    }
+
+    function cariDiKasir() {
+        const keyword = document.getElementById('cari-kasir').value.toLowerCase();
+        const filtered = listBarangMaster.filter(b => b.nama_barang.toLowerCase().includes(keyword));
+        renderGrid(filtered);
+    }
+
+    function tambahKeKeranjang(id) {
+        const produk = listBarangMaster.find(b => b.id_barang === id);
+        if (produk.stok <= 0) { alert("Stok habis!"); return; }
+        
+        const ada = keranjang.find(k => k.id_barang === id);
+        if (ada) {
+            if (ada.jumlah >= produk.stok) { alert("Pembelian melebihi sisa stok!"); return; }
+            ada.jumlah++;
+            ada.subtotal = ada.jumlah * ada.harga_jual;
+        } else {
+            keranjang.push({
+                id_barang: produk.id_barang,
+                nama_barang: produk.nama_barang,
+                harga_jual: produk.harga_jual,
+                jumlah: 1,
+                subtotal: produk.harga_jual
+            });
+        }
+        updateKeranjangUI();
+    }
+
+    function updateKeranjangUI() {
+        let html = '';
+        let total = 0;
+        keranjang.forEach((k, index) => {
+            total += k.subtotal;
+            html += `<div class="flex justify-between items-center text-sm border-b pb-2">
+                <div>
+                    <p class="font-semibold">${k.nama_barang}</p>
+                    <p class="text-xs text-gray-500">${k.jumlah} x Rp ${k.harga_jual.toLocaleString()}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold">Rp ${k.subtotal.toLocaleString()}</span>
+                    <button onclick="hapusKeranjangItem(${index})" class="text-red-500 text-xs">❌</button>
+                </div>
+            </div>`;
+        });
+        document.getElementById('keranjang-list').innerHTML = html || '<p class="text-gray-400 text-center py-8">Keranjang kosong</p>';
+        document.getElementById('grand-total').innerText = 'Rp ' + total.toLocaleString();
+    }
+
+    function hapusKeranjangItem(index) {
+        keranjang.splice(index, 1);
+        updateKeranjangUI();
+    }
+
+    function prosesCheckout() {
+        if(keranjang.length === 0) { alert("Keranjang kosong!"); return; }
+        const total = keranjang.reduce((sum, item) => sum + item.subtotal, 0);
+        
+        fetch('/api/penjualan', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                total_harga: total,
+                items: keranjang
+            })
+        }).then(res => res.json()).then(data => {
+            if (data.error) alert(data.error);
+            else {
+                alert("Transaksi Sukses Disimpan!");
+                keranjang = [];
+                updateKeranjangUI();
+                loadProdukKasir(); // refresh stok visual
+            }
+        });
+    }
+
+    window.onload = loadProdukKasir;
+</script>
+{% endblock %}

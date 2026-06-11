@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-blue-600">
+        <p class="text-sm text-gray-500 uppercase font-bold">Total Jenis Barang</p>
+        <p id="total-jenis" class="text-3xl font-bold text-gray-800">0</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-green-600">
+        <p class="text-sm text-gray-500 uppercase font-bold">Total Kuantitas Stok</p>
+        <p id="total-stok" class="text-3xl font-bold text-gray-800">0</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow border-l-4 border-purple-600">
+        <p class="text-sm text-gray-500 uppercase font-bold">Transaksi Hari Ini</p>
+        <p id="transaksi-hari" class="text-3xl font-bold text-gray-800">0</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-md font-bold mb-4 text-gray-700">Grafik Omset Penjualan (7 Hari Terakhir)</h3>
+        <canvas id="salesChart"></canvas>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-md font-bold mb-4 text-red-600">⚠️ Peringatan Stok Menipis (&lt; 10)</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-red-50 text-red-700">
+                        <th class="p-2 border-b">Nama Barang</th>
+                        <th class="p-2 border-b">Sisa Stok</th>
+                        <th class="p-2 border-b">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tabel-menipis"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Fetch data dashboard otomatis dari API saat load halaman
+    fetch('/api/dashboard')
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('total-jenis').innerText = data.total_jenis;
+            document.getElementById('total-stok').innerText = data.total_stok;
+            document.getElementById('transaksi-hari').innerText = data.transaksi_hari_ini;
+            
+            let html = '';
+            data.stok_menipis.forEach(b => {
+                html += `<tr class="border-b bg-yellow-50">
+                    <td class="p-2">${b.nama_barang}</td>
+                    <td class="p-2 text-red-600 font-bold">${b.stok} ${b.satuan}</td>
+                    <td class="p-2"><span class="bg-red-500 text-white px-2 py-0.5 rounded text-xs">Stok Menipis</span></td>
+                </tr>`;
+            });
+            document.getElementById('tabel-menipis').innerHTML = html || '<tr><td colspan="3" class="p-4 text-center text-gray-500">Semua stok aman! 😊</td></tr>';
+
+            // Setup grafik Chart.js
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.chart_labels,
+                    datasets: [{
+                        label: 'Pendapatan (Rp)',
+                        data: data.chart_values,
+                        borderColor: '#1E3A8A',
+                        backgroundColor: 'rgba(30, 58, 138, 0.1)',
+                        fill: true
+                    }]
+                }
+            });
+        });
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow mb-6">
+    <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+        <h2 class="text-xl font-bold text-gray-800">Laporan Keuangan & Penjualan</h2>
+        <div class="flex gap-2 bg-gray-100 p-1 rounded border">
+            <button onclick="loadLaporan('harian')" id="btn-harian" class="filter-btn px-4 py-1.5 rounded text-sm bg-white font-bold shadow">Hari Ini</button>
+            <button onclick="loadLaporan('mingguan')" id="btn-mingguan" class="filter-btn px-4 py-1.5 rounded text-sm text-gray-600">7 Hari Terakhir</button>
+            <button onclick="loadLaporan('bulanan')" id="btn-bulanan" class="filter-btn px-4 py-1.5 rounded text-sm text-gray-600">Bulan Ini</button>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-lg shadow overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+        <thead>
+            <tr class="bg-gray-100 text-gray-700">
+                <th class="p-3 border-b">Tanggal Transaksi</th>
+                <th class="p-3 border-b">Nama Barang</th>
+                <th class="p-3 border-b">Jumlah Terjual</th>
+                <th class="p-3 border-b">Total Pendapatan Kotor</th>
+            </tr>
+        </thead>
+        <tbody id="tabel-laporan"></tbody>
+    </table>
+</div>
+
+<script>
+    function loadLaporan(filter) {
+        // Ganti styling tombol aktif
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('bg-white', 'font-bold', 'shadow');
+            btn.classList.add('text-gray-600');
+        });
+        const activeBtn = document.getElementById(`btn-${filter}`);
+        activeBtn.classList.add('bg-white', 'font-bold', 'shadow');
+        activeBtn.classList.remove('text-gray-600');
+
+        fetch(`/api/laporan/penjualan?filter=${filter}`)
+            .then(res => res.json())
+            .then(data => {
+                let html = '';
+                let grandTotal = 0;
+                data.forEach(l => {
+                    grandTotal += l.total_pendapatan;
+                    html += `<tr class="border-b text-sm">
+                        <td class="p-3 text-gray-500">${l.tanggal}</td>
+                        <td class="p-3 font-semibold">${l.nama_barang}</td>
+                        <td class="p-3">${l.jumlah}</td>
+                        <td class="p-3 font-bold text-green-700">Rp ${l.total_pendapatan.toLocaleString()}</td>
+                    </tr>`;
+                });
+                
+                if (data.length > 0) {
+                    html += `<tr class="bg-gray-50 font-bold text-lg">
+                        <td colspan="3" class="p-4 text-right">TOTAL OMSET:</td>
+                        <td class="p-4 text-green-800">Rp ${grandTotal.toLocaleString()}</td>
+                    </tr>`;
+                } else {
+                    html = '<tr><td colspan="4" class="text-center p-8 text-gray-400">Tidak ada data penjualan pada periode ini.</td></tr>';
+                }
+                document.getElementById('tabel-laporan').innerHTML = html;
+            });
+    }
+
+    window.onload = () => loadLaporan('harian');
+</script>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-bold text-gray-800">Manajemen Gudang Barang</h2>
+    <button onclick="bukaModal()" class="bg-[#1E3A8A] text-white px-4 py-2 rounded shadow hover:bg-blue-800">+ Tambah Barang</button>
+</div>
+
+<div class="bg-white p-4 rounded-lg shadow mb-6 flex gap-4">
+    <input type="text" id="cari-nama" placeholder="Cari nama barang..." class="border p-2 rounded w-full">
+    <button onclick="loadBarang()" class="bg-gray-700 text-white px-6 py-2 rounded">Cari</button>
+</div>
+
+<div class="bg-white rounded-lg shadow overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+        <thead>
+            <tr class="bg-gray-100 text-gray-700">
+                <th class="p-3 border-b">ID</th>
+                <th class="p-3 border-b">Nama Barang</th>
+                <th class="p-3 border-b">Kategori</th>
+                <th class="p-3 border-b">Harga Beli</th>
+                <th class="p-3 border-b">Harga Jual</th>
+                <th class="p-3 border-b">Stok</th>
+                <th class="p-3 border-b text-center">Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="tabel-barang"></tbody>
+    </table>
+</div>
+
+<div id="modal-barang" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4">
+    <div class="bg-white p-6 rounded-lg w-full max-w-md shadow-lg">
+        <h3 id="modal-title" class="text-lg font-bold mb-4 text-gray-800">Tambah Barang Baru</h3>
+        <form id="form-barang" onsubmit="simpanBarang(event)" class="space-y-3">
+            <input type="hidden" id="form-id">
+            <div>
+                <label class="block text-xs font-bold text-gray-600">Nama Barang *</label>
+                <input type="text" id="form-nama" required class="w-full border p-2 rounded">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600">Kategori</label>
+                <input type="text" id="form-kategori" class="w-full border p-2 rounded">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600">Harga Beli *</label>
+                    <input type="number" id="form-beli" min="0" required class="w-full border p-2 rounded">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600">Harga Jual *</label>
+                    <input type="number" id="form-jual" min="0" required class="w-full border p-2 rounded">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600">Stok Awal</label>
+                    <input type="number" id="form-stok" min="0" value="0" class="w-full border p-2 rounded">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600">Satuan</label>
+                    <input type="text" id="form-satuan" placeholder="pcs, kg, dus" class="w-full border p-2 rounded">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-4">
+                <button type="button" onclick="tutupModal()" class="bg-gray-300 px-4 py-2 rounded">Batal</button>
+                <button type="submit" class="bg-[#1E3A8A] text-white px-4 py-2 rounded">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function loadBarang() {
+        const cari = document.getElementById('cari-nama').value;
+        fetch(`/api/barang?search=${cari}`)
+            .then(res => res.json())
+            .then(barang => {
+                let html = '';
+                barang.forEach(b => {
+                    const isMenipis = b.stok < 10;
+                    html += `<tr class="border-b hover:bg-gray-50 ${isMenipis ? 'bg-red-50' : ''}">
+                        <td class="p-3">${b.id_barang}</td>
+                        <td class="p-3 font-semibold">${b.nama_barang}</td>
+                        <td class="p-3 text-gray-500">${b.kategori || '-'}</td>
+                        <td class="p-3">Rp ${b.harga_beli.toLocaleString()}</td>
+                        <td class="p-3 font-medium text-green-700">Rp ${b.harga_jual.toLocaleString()}</td>
+                        <td class="p-3 font-bold ${isMenipis ? 'text-red-600' : 'text-gray-700'}">
+                            ${b.stok} ${b.satuan || 'pcs'}
+                            ${isMenipis ? '<span class="ml-1 text-xs bg-red-600 text-white px-1 py-0.5 rounded">Menipis</span>' : ''}
+                        </td>
+                        <td class="p-3 text-center space-x-2">
+                            <button onclick='editBarang(${JSON.stringify(b)})' class="text-blue-600 text-sm font-semibold hover:underline">Edit</button>
+                            <button onclick="hapusBarang(${b.id_barang})" class="text-red-600 text-sm font-semibold hover:underline">Hapus</button>
+                        </td>
+                    </tr>`;
+                });
+                document.getElementById('tabel-barang').innerHTML = html;
+            });
+    }
+
+    function bukaModal() {
+        document.getElementById('form-barang').reset();
+        document.getElementById('form-id').value = '';
+        document.getElementById('modal-title').innerText = "Tambah Barang Baru";
+        document.getElementById('modal-barang').classList.remove('hidden');
+    }
+    function tutupModal() { document.getElementById('modal-barang').classList.add('hidden'); }
+
+    function simpanBarang(e) {
+        e.preventDefault();
+        const id = document.getElementById('form-id').value;
+        const payload = {
+            nama_barang: document.getElementById('form-nama').value,
+            kategori: document.getElementById('form-kategori').value,
+            harga_beli: parseFloat(document.getElementById('form-beli').value),
+            harga_jual: parseFloat(document.getElementById('form-jual').value),
+            stok: parseInt(document.getElementById('form-stok').value),
+            satuan: document.getElementById('form-satuan').value
+        };
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/api/barang/${id}` : '/api/barang';
+
+        fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        }).then(res => res.json()).then(data => {
+            if (data.error) alert(data.error);
+            else { tutupModal(); loadBarang(); }
+        });
+    }
+
+    function editBarang(b) {
+        bukaModal();
+        document.getElementById('modal-title').innerText = "Edit Detail Barang";
+        document.getElementById('form-id').value = b.id_barang;
+        document.getElementById('form-nama').value = b.nama_barang;
+        document.getElementById('form-kategori').value = b.kategori;
+        document.getElementById('form-beli').value = b.harga_beli;
+        document.getElementById('form-jual').value = b.harga_jual;
+        document.getElementById('form-stok').value = b.stok;
+        document.getElementById('form-satuan').value = b.satuan;
+    }
+
+    function hapusBarang(id) {
+        if(confirm('Apakah Anda yakin ingin menghapus barang ini?')) {
+            fetch(`/api/barang/${id}`, { method: 'DELETE' })
+            .then(res => res.json()).then(data => {
+                if (data.error) alert(data.error);
+                else loadBarang();
+            });
+        }
+    }
+
+    // Load data pertama kali halaman dibuka
+    window.onload = loadBarang;
+</script>
+{% endblock %}

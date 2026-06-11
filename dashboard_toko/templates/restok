@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-bold mb-4 text-gray-800">Input Tambah Stok</h3>
+        <form onsubmit="prosesRestok(event)" class="space-y-4">
+            <div>
+                <label class="block text-sm font-bold text-gray-600">Pilih Barang</label>
+                <select id="restok-barang-id" required class="w-full border p-2 rounded mt-1"></select>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-600">Jumlah Tambahan Masuk</label>
+                <input type="number" id="restok-jumlah" min="1" required class="w-full border p-2 rounded mt-1">
+            </div>
+            <button type="submit" class="w-full bg-blue-700 text-white py-2 rounded font-bold shadow hover:bg-blue-800">Simpan Pasokan</button>
+        </form>
+    </div>
+
+    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow">
+        <h3 class="text-lg font-bold mb-4 text-gray-800">Riwayat Pengiriman Supplier</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="p-3 border-b">ID Restok</th>
+                        <th class="p-3 border-b">Nama Barang</th>
+                        <th class="p-3 border-b">Jumlah Masuk</th>
+                        <th class="p-3 border-b">Tanggal Log</th>
+                    </tr>
+                </thead>
+                <tbody id="tabel-riwayat-restok"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function initRestokPage() {
+        // Dropdown barang master
+        fetch('/api/barang')
+            .then(res => res.json())
+            .then(barang => {
+                let options = '<option value="">-- Pilih Barang --</option>';
+                barang.forEach(b => {
+                    options += `<option value="${b.id_barang}">${b.nama_barang} (Stok: ${b.stok})</option>`;
+                });
+                document.getElementById('restok-barang-id').innerHTML = options;
+            });
+            
+        // Riwayat Restok
+        fetch('/api/restok')
+            .then(res => res.json())
+            .then(riwayat => {
+                let html = '';
+                riwayat.forEach(r => {
+                    html += `<tr class="border-b text-sm">
+                        <td class="p-3">${r.id_restok}</td>
+                        <td class="p-3 font-bold">${r.nama_barang}</td>
+                        <td class="p-3 text-green-600 font-bold">+ ${r.jumlah_tambah}</td>
+                        <td class="p-3 text-gray-500">${r.tanggal}</td>
+                    </tr>`;
+                });
+                document.getElementById('tabel-riwayat-restok').innerHTML = html || '<tr><td colspan="4" class="text-center p-4">Belum ada riwayat restok</td></tr>';
+            });
+    }
+
+    function prosesRestok(e) {
+        e.preventDefault();
+        const payload = {
+            id_barang: parseInt(document.getElementById('restok-barang-id').value),
+            jumlah_tambah: parseInt(document.getElementById('restok-jumlah').value)
+        };
+        
+        fetch('/api/restok', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        }).then(res => res.json()).then(data => {
+            if(data.error) alert(data.error);
+            else {
+                alert("Stok berhasil diperbarui!");
+                document.getElementById('restok-jumlah').value = '';
+                initRestokPage();
+            }
+        });
+    }
+
+    window.onload = initRestokPage;
+</script>
+{% endblock %}
